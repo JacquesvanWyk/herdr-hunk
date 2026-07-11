@@ -30,6 +30,6 @@ extra=()
 
 exec "$herdr_bin" plugin pane open \
   --plugin herdr-hunk --entrypoint hunk-picker \
-  --placement "$placement" "${extra[@]}" --focus \
+  --placement "$placement" ${extra[@]+"${extra[@]}"} --focus \
   --cwd "$(target_cwd)" \
   --env "HERDR_HUNK_PICKER=$picker"

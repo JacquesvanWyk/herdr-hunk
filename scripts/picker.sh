@@ -6,11 +6,27 @@ set -uo pipefail
 theme_args=()
 [ -n "${HUNK_THEME:-}" ] && theme_args=(--theme "$HUNK_THEME")
 
-if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+if ! command -v hunk >/dev/null 2>&1; then
+  printf 'hunk not found on PATH (brew install hunk)\n'
+  read -r -n1 -s -p 'press any key to close'
+  exit 1
+fi
+
+if ! repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
   printf 'not a git repository: %s\n' "$PWD"
   read -r -n1 -s -p 'press any key to close'
   exit 1
 fi
+
+# Session-aware: if a hunk viewer is already open for this repo, reload it
+# with the chosen view instead of opening a second one; else become hunk.
+view() {
+  if hunk session get --repo "$repo_root" >/dev/null 2>&1 &&
+     hunk session reload --repo "$repo_root" -- "$@" >/dev/null 2>&1; then
+    exit 0
+  fi
+  exec hunk "$@" ${theme_args[@]+"${theme_args[@]}"}
+}
 
 log_fzf() {
   git log --oneline --color=always -200 |
@@ -30,26 +46,38 @@ choice="$(printf '%s\n' \
 
 case "$choice" in
   'Working tree (live)')
-    exec hunk diff --watch "${theme_args[@]}"
+    # a live session already watches; only a fresh viewer needs --watch
+    if hunk session get --repo "$repo_root" >/dev/null 2>&1 &&
+       hunk session reload --repo "$repo_root" -- diff >/dev/null 2>&1; then
+      exit 0
+    fi
+    exec hunk diff --watch ${theme_args[@]+"${theme_args[@]}"}
     ;;
   'Staged')
-    exec hunk diff --staged "${theme_args[@]}"
+    view diff --staged
     ;;
   'Last commit')
-    exec hunk show "${theme_args[@]}"
+    view show
     ;;
   'Pick commit')
     sha="$(log_fzf --prompt='commit> ' | awk '{print $1}')"
     [ -n "$sha" ] || exit 0
-    exec hunk show "$sha" "${theme_args[@]}"
+    view show "$sha"
     ;;
   'Pick range (2 commits)')
-    picks="$(log_fzf --multi 2 --prompt='pick 2 commits (tab to select)> ')"
-    [ "$(printf '%s\n' "$picks" | grep -c .)" -eq 2 ] || exit 0
-    # git log lists newest first; diff older..newer
-    newer="$(printf '%s\n' "$picks" | sed -n 1p | awk '{print $1}')"
-    older="$(printf '%s\n' "$picks" | sed -n 2p | awk '{print $1}')"
-    exec hunk diff "$older..$newer" "${theme_args[@]}"
+    picks="$(log_fzf --multi 2 --prompt='range> ' \
+      --header='TAB marks a commit (pick 2). Enter confirms. 1 marked = diff vs working tree.')"
+    count="$(printf '%s\n' "$picks" | grep -c .)"
+    if [ "$count" -eq 2 ]; then
+      # git log lists newest first; diff older..newer
+      newer="$(printf '%s\n' "$picks" | sed -n 1p | awk '{print $1}')"
+      older="$(printf '%s\n' "$picks" | sed -n 2p | awk '{print $1}')"
+      view diff "$older..$newer"
+    elif [ "$count" -eq 1 ]; then
+      sha="$(printf '%s\n' "$picks" | awk '{print $1}')"
+      view diff "$sha"
+    fi
+    exit 0
     ;;
   'Branch vs upstream')
     branch="$(git branch --show-current)"
@@ -68,7 +96,7 @@ case "$choice" in
       read -r -n1 -s -p 'press any key to close'
       exit 1
     fi
-    exec hunk diff "$upstream..$branch" "${theme_args[@]}"
+    view diff "$upstream..$branch"
     ;;
   'Stash')
     ref="$(git stash list |
@@ -76,6 +104,6 @@ case "$choice" in
         --preview 'git stash show --stat --color=always {1}' --preview-window=right,55% |
       cut -d: -f1)"
     [ -n "$ref" ] || exit 0
-    exec hunk stash show "$ref" "${theme_args[@]}"
+    exec hunk stash show "$ref" ${theme_args[@]+"${theme_args[@]}"}
     ;;
 esac
