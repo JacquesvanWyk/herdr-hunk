@@ -1,6 +1,6 @@
 id = "herdr-hunk"
 name = "herdr-hunk"
-version = "0.1.0"
+version = "0.1.1"
 description = "Interactive fzf picker for hunk: view any commit, range, stash, staged or working-tree diff in a herdr pane."
 min_herdr_version = "0.7.0"
 platforms = ["linux", "macos"]
