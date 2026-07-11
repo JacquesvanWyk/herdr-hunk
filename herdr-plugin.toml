@@ -41,6 +41,12 @@ title = "Hunk live diff"
 description = "Toggle a live-reloading working-tree diff in a split pane (open / focus / close)."
 command = ["bash", "scripts/open-hunk-watch.sh"]
 
+[[actions]]
+id = "toggle-autodiff"
+title = "Toggle autodiff"
+description = "Turn the agent-idle auto-open diff on or off (shows a toast with the new state)."
+command = ["bash", "scripts/toggle-autodiff.sh"]
+
 # Auto-open: when a coding agent's pane goes idle with uncommitted changes,
 # open a live hunk diff split beside it. Opt out by touching
 # "$(herdr plugin config-dir herdr-hunk)/autodiff-off".
