@@ -44,9 +44,19 @@ It stays out of the way:
 - skips when a hunk viewer is already open for that repo (its `--watch` keeps it fresh)
 - once you close the pane, it won't reopen until the agent produces *new* changes
 
-Toggle it with the `toggle-autodiff` action — a toast confirms the state:
+**Autodiff is ON by default** once the plugin is installed. Toggle it with the `toggle-autodiff` action — a toast confirms the state:
 
 ![autodiff toggle toast](docs/autodiff-toast.jpeg)
+
+Check or set it manually:
+
+```bash
+ls "$(herdr plugin config-dir herdr-hunk)"                        # empty = ON
+touch "$(herdr plugin config-dir herdr-hunk)/autodiff-off"        # force OFF
+rm "$(herdr plugin config-dir herdr-hunk)/autodiff-off"           # force ON
+```
+
+Note: quick double-presses of the toggle work, but herdr queues toasts — the second toast appears after the first expires.
 
 ## Install
 
