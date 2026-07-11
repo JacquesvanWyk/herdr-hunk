@@ -7,12 +7,13 @@ set -uo pipefail
 herdr_bin="${HERDR_BIN_PATH:-herdr}"
 command -v jq >/dev/null 2>&1 || exit 0
 
-cfg_dir="${HERDR_PLUGIN_CONFIG_DIR:-}"
-[ -n "$cfg_dir" ] && [ -e "$cfg_dir/autodiff-off" ] && exit 0
-
-evt="${HERDR_PLUGIN_EVENT_JSON:-}"
 # skip reasons go to stdout -> visible via `herdr plugin log list`
 log() { printf '%s\n' "$*"; }
+
+cfg_dir="${HERDR_PLUGIN_CONFIG_DIR:-}"
+[ -n "$cfg_dir" ] && [ -e "$cfg_dir/autodiff-off" ] && { log "skip: autodiff off"; exit 0; }
+
+evt="${HERDR_PLUGIN_EVENT_JSON:-}"
 [ -n "$evt" ] || exit 0
 status="$(printf '%s' "$evt" | jq -r '.data.agent_status // .agent_status // empty' 2>/dev/null)" || exit 0
 [ "$status" = "idle" ] || { log "skip: status=$status"; exit 0; }
