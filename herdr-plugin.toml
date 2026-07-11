@@ -1,0 +1,42 @@
+id = "herdr-hunk"
+name = "herdr-hunk"
+version = "0.1.0"
+description = "Interactive fzf picker for hunk: view any commit, range, stash, staged or working-tree diff in a herdr pane."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos"]
+
+# Pane entrypoints: herdr spawns these argvs directly in the new pane (no
+# shell, cwd = the --cwd passed at open time). "hunk" resolves on PATH.
+[[panes]]
+id = "hunk-diff"
+title = "hunk"
+placement = "split"
+command = ["hunk", "diff", "--watch"]
+
+# The picker script's path can't be relative here (it would resolve against
+# the project --cwd, not the plugin root), so the launcher action passes its
+# absolute path in via --env HERDR_HUNK_PICKER.
+[[panes]]
+id = "hunk-picker"
+title = "hunk"
+placement = "split"
+command = ["bash", "-c", "exec bash \"${HERDR_HUNK_PICKER:?launched outside herdr-hunk action}\""]
+
+# Actions run detached (no terminal) — they open panes, the panes do the work.
+[[actions]]
+id = "open-hunk-picker"
+title = "Hunk picker"
+description = "fzf picker: working tree / staged / commit / range / stash, then view in hunk (split pane)."
+command = ["bash", "scripts/open-hunk-picker.sh", "split"]
+
+[[actions]]
+id = "open-hunk-picker-tab"
+title = "Hunk picker (tab)"
+description = "fzf picker: working tree / staged / commit / range / stash, then view in hunk (own tab)."
+command = ["bash", "scripts/open-hunk-picker.sh", "tab"]
+
+[[actions]]
+id = "open-hunk-watch"
+title = "Hunk live diff"
+description = "Toggle a live-reloading working-tree diff in a split pane (open / focus / close)."
+command = ["bash", "scripts/open-hunk-watch.sh"]
