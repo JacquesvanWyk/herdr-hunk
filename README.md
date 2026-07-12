@@ -73,24 +73,31 @@ herdr plugin link /path/to/herdr-hunk
 
 ## Keybindings
 
-Add to `~/.config/herdr/config.toml` (avoid `prefix+h`/`l` — they collide with pane navigation):
+Add to `~/.config/herdr/config.toml`:
 
 ```toml
 [[keys.command]]              # picker in a split
-key = "prefix+d"
+key = "ctrl+alt+d"
 type = "shell"
 command = "herdr plugin action invoke open-hunk-picker --plugin herdr-hunk"
 
 [[keys.command]]              # picker in its own tab
-key = "prefix+shift+d"
+key = "ctrl+alt+shift+d"
 type = "shell"
 command = "herdr plugin action invoke open-hunk-picker-tab --plugin herdr-hunk"
 
 [[keys.command]]              # autodiff on/off
-key = "prefix+a"
+key = "ctrl+alt+a"
 type = "shell"
 command = "herdr plugin action invoke toggle-autodiff --plugin herdr-hunk"
 ```
+
+> **Pick keys that fit your setup.** These are suggestions. herdr reserves most
+> `prefix+<letter>` chords for its built-ins (pane navigation on `prefix+h/j/k/l`, tab
+> nav, workspace actions — see the herdr keybindings reference), so this plugin uses
+> `ctrl+alt+*` direct chords to stay clear of them and of your other plugins. Rebind to
+> whatever is free on your system. If `ctrl+alt+shift+*` doesn't register in your terminal,
+> use a plain `ctrl+alt+<letter>` for the tab action instead.
 
 Then reload:
 
