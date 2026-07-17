@@ -25,9 +25,19 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 command -v hunk >/dev/null 2>&1 || { log "skip: no hunk on PATH"; exit 0; }
 
 info="$("$herdr_bin" pane get "$pane_id" 2>/dev/null)" || { log "skip: pane get failed"; exit 0; }
-cwd="$(printf '%s' "$info" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd // empty' 2>/dev/null)" || exit 0
-[ -d "$cwd" ] || { log "skip: bad cwd=$cwd"; exit 0; }
-root="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || { log "skip: not git repo cwd=$cwd"; exit 0; }
+# prefer foreground_cwd, but a plugin/MCP subprocess may have chdir-ed it to a
+# dir that isn't a git repo (e.g. Claude Code's remote-control plugin, whose
+# MCP server lives under ~/.claude/plugins/cache/.../imessage/0.1.0). In that
+# case fall back to the pane's own cwd before giving up, so autodiff still fires
+# for the real repo instead of skipping "not git repo".
+fg_cwd="$(printf '%s' "$info" | jq -r '.result.pane.foreground_cwd // empty' 2>/dev/null)" || exit 0
+cwd="$(printf '%s' "$info" | jq -r '.result.pane.cwd // empty' 2>/dev/null)" || exit 0
+root=""
+for cand in "$fg_cwd" "$cwd"; do
+  [ -n "$cand" ] && [ -d "$cand" ] || continue
+  root="$(git -C "$cand" rev-parse --show-toplevel 2>/dev/null)" && break
+done
+[ -n "$root" ] || { log "skip: not git repo (fg=$fg_cwd cwd=$cwd)"; exit 0; }
 
 # nothing uncommitted -> nothing to review
 [ -n "$(git -C "$root" status --porcelain 2>/dev/null)" ] || { log "skip: no changes in $root"; exit 0; }
